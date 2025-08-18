@@ -303,3 +303,4 @@ tabs.*
 *.pdf
 dist/
 node_modules/
+logs/
