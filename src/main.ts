@@ -1,4 +1,3 @@
-// main.ts
 import { server } from 'lagrange.onebot';
 import './impl';
 import './test';

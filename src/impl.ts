@@ -1,5 +1,3 @@
-// src/impl.ts
-
 import * as fs from 'fs/promises'; // 使用异步的 fs/promises
 import * as path from 'path';
 import { LagrangeContext, GroupMessage } from 'lagrange.onebot';

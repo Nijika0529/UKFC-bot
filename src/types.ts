@@ -1,4 +1,3 @@
-
 export interface MessageRecord {
   sender: string;
   user_id: number;
