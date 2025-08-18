@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "lagrange.onebot": "^1.0.10"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.9.2"
+  }
+}
