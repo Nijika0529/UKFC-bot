@@ -1,4 +1,5 @@
 import * as fs from 'fs/promises'; // 使用异步的 fs/promises
+import * as iconv from 'iconv-lite';
 import * as path from 'path';
 import { LagrangeContext, GroupMessage } from 'lagrange.onebot';
 import { MessageRecord } from './types'; // 导入我们定义的类型
@@ -112,41 +113,49 @@ export async function handleBotMention(c: LagrangeContext<GroupMessage>, message
     }
 }
 
-const ALLOWED_COMMANDS = new Set(['ls', 'cat', 'ping', 'whoami', 'date', 'echo', 'whereis', 'which']);
-
-export function executeSafeCommand(fullCommandString: string): Promise<string> {
-    return new Promise((resolve) => {
-        // 2. 解析命令和参数
-        const parts = fullCommandString.trim().split(/\s+/);
-        const command = parts[0];
-        const args = parts.slice(1);
-
-        // 3. 检查命令是否在白名单中
-        if (!ALLOWED_COMMANDS.has(command)) {
-            resolve(`❌ 命令 "${command}" 不被允许执行。为了安全，只能使用以下命令之一：\n[${[...ALLOWED_COMMANDS].join(', ')}]`);
-            return;
-        }
+const ALLOWED_COMMANDS = new Set(['ls', 'cat', 'ping', 'whoami', 'date', 'echo', 'whereis', 'which','ifconfig','ipconfig']);
 
         // 4. 使用 execFile 执行命令，这可以防止命令注入！
         // execFile 不会启动一个 shell，参数会被安全地传递。
         // 例如，用户输入 "ls; rm -rf /" 会被解析为 command='ls;' args=['rm', ...], 
         // 由于 'ls;' 不在白名单中，执行会被拒绝。
-        execFile(command, args, { timeout: 5000 }, (error, stdout, stderr) => {
+export function executeSafeCommand(fullCommandString: string): Promise<string> {
+    return new Promise((resolve) => {
+        const parts = fullCommandString.trim().split(/\s+/);
+        const command = parts[0];
+        const args = parts.slice(1);
+
+        if (!ALLOWED_COMMANDS.has(command)) {
+            resolve(`❌ 命令 "${command}" 不被允许执行。`);
+            return;
+        }
+
+        // 2. 在 options 中，将 encoding 设置为 'buffer'
+        //    这样 stdout 和 stderr 就会是 Buffer 对象，而不是字符串
+        execFile(command, args, { timeout: 5000, cwd: '/', encoding: 'buffer' }, (error, stdout, stderr) => {
             if (error) {
-                // 对于 ping 超时等情况，error 对象会存在
-                resolve(`执行出错: ${error.message}`);
+                // error 对象也需要解码
+                const errorMessage = iconv.decode(Buffer.from(error.message), 'gbk');
+                resolve(`执行出错: ${errorMessage}`);
                 return;
             }
-            if (stderr) {
-                resolve(`命令执行有误: \n${stderr}`);
+            if (stderr && stderr.length > 0) {
+                // 3. 使用 iconv.decode 将 stderr Buffer 解码为 gbk 字符串
+                const decodedStderr = iconv.decode(stderr, 'gbk');
+                resolve(`命令执行有误: \n${decodedStderr}`);
                 return;
             }
-            // 只返回标准输出，并限制长度
-            const output = stdout.substring(0, 1500); // 避免消息太长刷屏
-            resolve(`${output}`); // 使用 Markdown 格式化输出
+
+            // 4. 使用 iconv.decode 将 stdout Buffer 解码为 gbk 字符串
+            const decodedStdout = iconv.decode(stdout, 'gbk');
+
+            const singleLineOutput = decodedStdout.replace(/\s+/g, ' ').trim();
+            const output = singleLineOutput.substring(0, 1500);
+            resolve(output);
         });
     });
 }
+
 
 /**
  * 执行一个安全的基础 shell 命令

@@ -16,6 +16,6 @@ npx tsc
 node ./dist/main.js
 ```
 
-或者直接docker搭好分别起两个服务即可
+或者直接docker搭好分别起两个服务即可，需要更改qq号
 
 ![image-20250818145059948](https://aniale-blog.oss-cn-beijing.aliyuncs.com/blog/20250818145059987.png)

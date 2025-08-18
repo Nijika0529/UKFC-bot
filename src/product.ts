@@ -2,7 +2,7 @@ import {mapper, LagrangeContext, PrivateMessage, GroupMessage, plugins, AddFrien
 import fs from "fs";
 import path from "path";
 import { logger } from './utils';
-import { parseMessageRecord, saveRecordToFile, handleBotMention } from './impl';
+import { parseMessageRecord, saveRecordToFile, handleBotMention,handlePossibleCommand } from './impl';
 
 export class Impl {
 
@@ -10,39 +10,23 @@ export class Impl {
 
 
     @mapper.onGroup(691575403)
-        async recordGroupMessage(c: LagrangeContext<GroupMessage>) {
-            if (!c.message) {
-                logger.warning('收到了一个没有消息内容的事件！');
-                return;
-            }
-
-            try {
-                const result = await c.getMsg(c.message.message_id);
-                if (!result || result instanceof Error || !result.data) {
-                    logger.error('获取消息详情失败!', result);
-                    return;
+        async recordGroupMessage_executeCommand(c: LagrangeContext<GroupMessage>) {
+                    const plainText = c.message.raw_message || '';
+        
+                    try {
+                        const result = await c.getMsg(c.message.message_id);
+                    if (result && !(result instanceof Error) && result.data) {
+                        const record = await parseMessageRecord(c, result.data);
+                        if (record && record.content.trim() !== '') {
+                            await saveRecordToFile(record, c.message.group_id);
+                            await handlePossibleCommand(c);
+                        }
+                    }
+                } catch (error) {
+                    logger.error(`[群: ${c.message.group_id}] 记录消息时发生错误:`, error);
                 }
-                const messageData = result.data;
-
-                // 1. 解析消息
-                const record = await parseMessageRecord(c, messageData);
-
-                // 2. 如果消息有效，则保存
-                if (record) {
-                    const groupId = c.message.group_id;
-                    await saveRecordToFile(record,groupId);
-                }
-
-                // 3. 处理 @bot 的情况
-                await handleBotMention(c, messageData);
-
-            } catch (error) {
-                logger.error('处理群消息时发生未知错误:', error);
-            } finally {
-                // 4. 确保会话总是结束
-                c.finishSession();
+                
             }
-        }
 }
 
 

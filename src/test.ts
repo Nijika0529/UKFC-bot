@@ -6,10 +6,8 @@ import { parseMessageRecord, saveRecordToFile, handleBotMention,handlePossibleCo
 
 export class Impl {
 
-    
-
      @mapper.onGroup(1054047948)
-        async recordGroupMessage(c: LagrangeContext<GroupMessage>) {
+        async recordGroupMessage_executeCommand(c: LagrangeContext<GroupMessage>) {
             const plainText = c.message.raw_message || '';
 
             try {
