@@ -1,8 +1,8 @@
 import {mapper, LagrangeContext, PrivateMessage, GroupMessage, plugins, AddFriendOrGroupMessage, ApproveMessage} from 'lagrange.onebot';
-import path from "path";
 import { logger } from './utils';
 import { parseMessageRecord, saveRecordToFile, handleBotMention,handlePossibleCommand } from './impl';
 import * as dotenv from 'dotenv';
+
 
 dotenv.config();
 const testGroupId = Number(process.env.test_GROUP_ID);
@@ -25,6 +25,14 @@ export class Impl {
         } catch (error) {
             logger.error(`[群: ${c.message.group_id}] 记录消息时发生错误:`, error);
         }
+    
+            // const newPdfFilename = "群聊总结.2025.08.19.pdf"
+            // // const newPdfPath = path.join('/MCP/qq-group-summary/',newPdfFilename);
+            // const newPdfPath = "/MCP/qq-group-summary/群聊总结.2025.08.19.pdf";
+            // console.log(newPdfPath);
+            // const uploadResult = await c.uploadGroupFile(testGroupId, newPdfPath, newPdfFilename);
+            // // c.sendGroupMsg(testGroupId,"1");
+            // console.log(uploadResult);
         
     }
 

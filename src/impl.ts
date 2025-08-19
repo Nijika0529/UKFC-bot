@@ -5,9 +5,9 @@ import { execFile } from 'child_process';
 import cron from 'node-cron';
 import {mapper, LagrangeContext, PrivateMessage, GroupMessage, plugins, AddFriendOrGroupMessage, ApproveMessage, Message} from 'lagrange.onebot';
 import { MessageRecord } from './types'; // 导入我们定义的类型
-import { getWeather } from './mcp';
+import { getGroupSummaryPDF, getWeather } from './mcp';
 
-const BOT_QQ = 3880559396;
+const BOT_QQ = Number(process.env.Windows_TEST);
 
 /**
  * 解析原始消息数据，转换成标准的消息记录对象
@@ -190,7 +190,7 @@ export async function handlePossibleCommand(c: LagrangeContext<GroupMessage>): P
 }
 //调用mcp服务查询天气
 export function setupDailyWeatherJob(c: LagrangeContext<Message>, GroupId: number) {
-    const cityToQuery = '北京';
+    const cityToQuery = '晋中';
     const cronTime = '0 27 15 * * *'; // CRON 表达式: 每天早上 8:00:00
 
     // 设置一个循环的定时器
@@ -206,6 +206,41 @@ export function setupDailyWeatherJob(c: LagrangeContext<Message>, GroupId: numbe
 
         } catch (error) {
             console.error(`[定时任务] 每日天气任务执行失败:`, error);
+        }
+    }, {
+        timezone: "Asia/Shanghai"
+    });
+}
+
+export function setsummaryPDFJob(c: LagrangeContext<Message>, GroupId: number) {
+    const cronTime = '0 39 20 * * *';
+
+    cron.schedule(cronTime, async () => {
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const day = today.getDate().toString().padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
+
+        //使用 path.join 动态生成当天的 JSON 文件路径
+        const filepath = path.join(process.cwd(), 'logs', String(GroupId), `${dateString}.json`);
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+        
+        try {
+            await getGroupSummaryPDF(filepath);
+            const oldPdfPath = '/MCP/qq-group-summary/群聊总结.pdf';
+            const newPdfFilename = `群聊总结.${year}.${month}.${day}.pdf`;
+            const newPdfPath = path.join('/MCP/qq-group-summary/', newPdfFilename);
+            await fs.rename(oldPdfPath, newPdfPath);
+            // console.log("10000");
+            await delay(500);
+            const uploadResult = await c.uploadGroupFile(GroupId, newPdfPath, newPdfFilename);
+            console.log(uploadResult);
+
+        } catch (error) {
+            console.error(`[定时任务] 群聊日报总结任务执行失败:`, error);
+            await c.sendGroupMsg(GroupId, "抱歉，今天的群聊总结生成失败了 T_T");
         }
     }, {
         timezone: "Asia/Shanghai"

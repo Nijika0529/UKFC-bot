@@ -1,13 +1,14 @@
 import { server } from 'lagrange.onebot';
 import './test';
 import './product'
-import { setupDailyWeatherJob } from './impl';
+import { setupDailyWeatherJob, setsummaryPDFJob } from './impl';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 const My_ID = Number(process.env.My_ID);
 const test_GROUP_ID = Number(process.env.test_GROUP_ID);
 const Windows_TEST = Number(process.env.Windows_TEST);
+const fox_home_GROUP_ID = Number(process.env.fox_home_GROUP_ID);
 
 
 // server 刚启动的时候要做的事情
@@ -15,8 +16,7 @@ server.onMounted(c => {
     // 向 QQ 号为 123456 的好友发送文本信息 "成功上线"
     c.sendPrivateMsg(My_ID, '成功上线');
     setupDailyWeatherJob(c,test_GROUP_ID)
-
-
+    setsummaryPDFJob(c,fox_home_GROUP_ID)
 });
 
 // server 即将关闭时要做的事情
