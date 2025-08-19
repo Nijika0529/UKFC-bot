@@ -1,7 +1,10 @@
 {
   "dependencies": {
+    "dotenv": "^17.2.1",
     "iconv-lite": "^0.6.3",
-    "lagrange.onebot": "^1.0.10"
+    "lagrange.onebot": "^1.0.10",
+    "node-cron": "^4.2.1",
+    "openmcp-sdk": "^0.1.0"
   },
   "devDependencies": {
     "@types/iconv-lite": "^0.0.1",

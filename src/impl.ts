@@ -1,9 +1,11 @@
 import * as fs from 'fs/promises'; // 使用异步的 fs/promises
 import * as iconv from 'iconv-lite';
 import * as path from 'path';
-import { LagrangeContext, GroupMessage } from 'lagrange.onebot';
-import { MessageRecord } from './types'; // 导入我们定义的类型
 import { execFile } from 'child_process';
+import cron from 'node-cron';
+import {mapper, LagrangeContext, PrivateMessage, GroupMessage, plugins, AddFriendOrGroupMessage, ApproveMessage, Message} from 'lagrange.onebot';
+import { MessageRecord } from './types'; // 导入我们定义的类型
+import { getWeather } from './mcp';
 
 const BOT_QQ = 3880559396;
 
@@ -185,4 +187,27 @@ export async function handlePossibleCommand(c: LagrangeContext<GroupMessage>): P
             await c.sendGroupMsg(c.message.group_id, '糟糕，执行指令时我好像出错了。');
         }
     }
+}
+//调用mcp服务查询天气
+export function setupDailyWeatherJob(c: LagrangeContext<Message>, GroupId: number) {
+    const cityToQuery = '北京';
+    const cronTime = '0 27 15 * * *'; // CRON 表达式: 每天早上 8:00:00
+
+    // 设置一个循环的定时器
+    cron.schedule(cronTime, async () => {
+        const currentDate = new Date().toLocaleDateString('zh-CN');
+
+        try {
+            // 调用 mcp 中的 getWeather 函数
+            const weatherReport = await getWeather(cityToQuery);
+            
+            // 示例：在这里，你应该调用发送QQ消息的函数
+            await c.sendGroupMsg(GroupId,weatherReport)
+
+        } catch (error) {
+            console.error(`[定时任务] 每日天气任务执行失败:`, error);
+        }
+    }, {
+        timezone: "Asia/Shanghai"
+    });
 }

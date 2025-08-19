@@ -1,12 +1,15 @@
 import {mapper, LagrangeContext, PrivateMessage, GroupMessage, plugins, AddFriendOrGroupMessage, ApproveMessage} from 'lagrange.onebot';
-import fs from "fs";
 import path from "path";
 import { logger } from './utils';
 import { parseMessageRecord, saveRecordToFile, handleBotMention,handlePossibleCommand } from './impl';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+const testGroupId = Number(process.env.test_GROUP_ID);
 
 export class Impl {
 
-     @mapper.onGroup(1054047948)
+     @mapper.onGroup(testGroupId)
         async recordGroupMessage_executeCommand(c: LagrangeContext<GroupMessage>) {
             const plainText = c.message.raw_message || '';
 
@@ -25,7 +28,7 @@ export class Impl {
         
     }
 
-    // @mapper.onGroup(1054047948) // 将这里的群号替换为你自己的测试群号
+    // @mapper.onGroup(testGroupId) // 将这里的群号替换为你自己的测试群号
     //     async handleGetMessage(c: LagrangeContext<GroupMessage>) {
     //         // 检查 c.message 是否存在，并获取 message_id
     //         if (!c.message) {
@@ -62,7 +65,7 @@ export class Impl {
     //         }
     //     }
     //测试记录消息以及@功能
-    // @mapper.onGroup(1054047948) // 将这里的群号替换为你自己的测试群号
+    // @mapper.onGroup(testGroupId) // 将这里的群号替换为你自己的测试群号
     //     async recordGroupMessage(c: LagrangeContext<GroupMessage>) {
     //         if (!c.message) {
     //             logger.warning('收到了一个没有消息内容的事件！');
@@ -185,7 +188,7 @@ export class Impl {
 
 
     //测试欢迎新人入群消息
-    // @mapper.onGroupIncrease(1054047948)
+    // @mapper.onGroupIncrease(testGroupId)
     // async handleGroupIncreaseTest(c: LagrangeContext<ApproveMessage>) {
     //     console.log(`user: ${c.message.user_id} join the group`);
     //     const newMemberId = c.message.user_id;
@@ -212,10 +215,4 @@ export class Impl {
 
 
 
-}
-
-function getTodayFilePath() {
-    const today = new Date();
-    const dateStr = today.toISOString().split("T")[0]; // 2025-08-16
-    return path.resolve(`./logs/test_group_messages_${dateStr}.json`);
 }
