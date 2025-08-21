@@ -6,7 +6,6 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 const fox_home = Number(process.env.fox_home_GROUP_ID);
 
-
 export class Impl {
 
     @mapper.onGroup(fox_home)

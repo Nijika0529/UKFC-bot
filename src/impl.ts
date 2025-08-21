@@ -5,9 +5,9 @@ import { execFile } from 'child_process';
 import cron from 'node-cron';
 import {mapper, LagrangeContext, PrivateMessage, GroupMessage, plugins, AddFriendOrGroupMessage, ApproveMessage, Message} from 'lagrange.onebot';
 import { MessageRecord } from './types'; // 导入我们定义的类型
-import { getWeather } from './mcp';
+import { getGroupSummaryPDF, getWeather } from './mcp';
 
-const BOT_QQ = 3880559396;
+const BOT_QQ = Number(process.env.Docker_TEST);
 
 /**
  * 解析原始消息数据，转换成标准的消息记录对象
@@ -25,7 +25,7 @@ export async function parseMessageRecord(c: LagrangeContext<GroupMessage>, messa
         }
     }
 
-    const correctedTimestamp = messageData.time + 8 * 60 * 60;
+    const correctedTimestamp = messageData.time;
     const record: MessageRecord = {
         sender: messageData.sender.nickname,
         user_id: messageData.sender.user_id,
@@ -106,21 +106,16 @@ export async function saveRecordToFile(record: MessageRecord, groupId: number | 
  * @param c LagrangeContext
  * @param messageData 原始消息数据
  */
-export async function handleBotMention(c: LagrangeContext<GroupMessage>, messageData: any): Promise<void> {
-    const isAtBot = Array.isArray(messageData.message) && 
-                    messageData.message.some((m: any) => m.type === "at" && m.data?.qq == BOT_QQ);
-    
-    if (isAtBot) {
-        await c.sendGroupMsg(c.message.group_id, "凉薄还没开发好他的bot，目前没有功能");
-    }
+export async function handleBotMention(c: LagrangeContext<GroupMessage>,messageData: any): Promise<boolean> {
+    const isAtBot = Array.isArray(messageData.message) &&
+                    messageData.message.some(
+                        (m: any) => m.type === "at" && m.data?.qq === BOT_QQ
+                    );
+    return isAtBot;
 }
 
-const ALLOWED_COMMANDS = new Set(['ls', 'cat', 'ping', 'whoami', 'date', 'echo', 'whereis', 'which','ifconfig','ipconfig']);
+const ALLOWED_COMMANDS = new Set(['ls', 'cat', 'ping', 'whoami', 'date', 'where', 'which','ifconfig','id']);
 
-        // 4. 使用 execFile 执行命令，这可以防止命令注入！
-        // execFile 不会启动一个 shell，参数会被安全地传递。
-        // 例如，用户输入 "ls; rm -rf /" 会被解析为 command='ls;' args=['rm', ...], 
-        // 由于 'ls;' 不在白名单中，执行会被拒绝。
 export function executeSafeCommand(fullCommandString: string): Promise<string> {
     return new Promise((resolve) => {
         const parts = fullCommandString.trim().split(/\s+/);
@@ -190,8 +185,8 @@ export async function handlePossibleCommand(c: LagrangeContext<GroupMessage>): P
 }
 //调用mcp服务查询天气
 export function setupDailyWeatherJob(c: LagrangeContext<Message>, GroupId: number) {
-    const cityToQuery = '北京';
-    const cronTime = '0 27 15 * * *'; // CRON 表达式: 每天早上 8:00:00
+    const cityToQuery = '101100401';
+    const cronTime = '0 00 8 * * *'; // CRON 表达式: 每天早上 8:00:00
 
     // 设置一个循环的定时器
     cron.schedule(cronTime, async () => {
@@ -206,6 +201,41 @@ export function setupDailyWeatherJob(c: LagrangeContext<Message>, GroupId: numbe
 
         } catch (error) {
             console.error(`[定时任务] 每日天气任务执行失败:`, error);
+        }
+    }, {
+        timezone: "Asia/Shanghai"
+    });
+}
+
+export function setsummaryPDFJob(c: LagrangeContext<Message>, GroupId: number) {
+    const cronTime = '0 00 23 * * *';
+
+    cron.schedule(cronTime, async () => {
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const day = today.getDate().toString().padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
+
+        //使用 path.join 动态生成当天的 JSON 文件路径
+        const filepath = path.join(process.cwd(), 'logs', String(GroupId), `${dateString}.json`);
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+        
+        try {
+            await getGroupSummaryPDF(filepath);
+            const oldPdfPath = '/app/qq-group-summary/群聊总结.pdf';
+            const newPdfFilename = `群聊总结.${year}.${month}.${day}.pdf`;
+            const newPdfPath = path.join('/app/qq-group-summary/', newPdfFilename);
+            await fs.rename(oldPdfPath, newPdfPath);
+            // console.log("10000");
+            await delay(500);
+            const uploadResult = await c.uploadGroupFile(GroupId, newPdfPath, newPdfFilename);
+            console.log(uploadResult);
+
+        } catch (error) {
+            console.error(`[定时任务] 群聊日报总结任务执行失败:`, error);
+            await c.sendGroupMsg(GroupId, "抱歉，今天的群聊总结生成失败了 T_T");
         }
     }, {
         timezone: "Asia/Shanghai"

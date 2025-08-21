@@ -305,3 +305,6 @@ dist/
 node_modules/
 logs/
 mcpconfig.json
+qqsummary_mcpconfig.json
+weather_mcpconfig.json
+rag_mcpconfig.json
