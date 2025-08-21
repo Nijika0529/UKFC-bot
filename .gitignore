@@ -305,3 +305,4 @@ dist/
 node_modules/
 logs/
 mcpconfig.json
+./Lagrange.OneBot
