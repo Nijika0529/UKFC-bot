@@ -3,6 +3,7 @@ import path from "path";
 import { logger } from './utils';
 import { parseMessageRecord, saveRecordToFile, handleBotMention, handlePossibleCommand } from './impl';
 import * as dotenv from 'dotenv';
+import { ragMemory } from './mcp';
 
 dotenv.config();
 const testGroupId = Number(process.env.test_GROUP_ID);
