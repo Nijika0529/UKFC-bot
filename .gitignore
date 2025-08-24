@@ -306,3 +306,6 @@ node_modules/
 logs/
 mcpconfig.json
 ./Lagrange.OneBot
+./qqsummary_mcpconfig.json
+./rag_mcpconfig.json
+./weather_mcpconfig.json
