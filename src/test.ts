@@ -1,9 +1,10 @@
 import {mapper, LagrangeContext, PrivateMessage, GroupMessage, plugins, AddFriendOrGroupMessage, ApproveMessage} from 'lagrange.onebot';
-import path from "path";
 import { logger } from './utils';
 import { parseMessageRecord, saveRecordToFile, handleBotMention, handlePossibleCommand } from './impl';
 import * as dotenv from 'dotenv';
 import { ragMemory } from './mcp';
+
+const newMembers: Map<number, { ids: number[], names: string[], timer?: NodeJS.Timeout }> = new Map();
 
 dotenv.config();
 const testGroupId = Number(process.env.test_GROUP_ID);
@@ -40,14 +41,6 @@ export class Impl {
         } catch (error) {
             logger.error(`[群: ${c.message.group_id}] 记录消息时发生错误:`, error);
         }
-    
-            // const newPdfFilename = "群聊总结.2025.08.19.pdf"
-            // // const newPdfPath = path.join('/MCP/qq-group-summary/',newPdfFilename);
-            // const newPdfPath = "/MCP/qq-group-summary/群聊总结.2025.08.19.pdf";
-            // console.log(newPdfPath);
-            // const uploadResult = await c.uploadGroupFile(testGroupId, newPdfPath, newPdfFilename);
-            // // c.sendGroupMsg(testGroupId,"1");
-            // console.log(uploadResult);
         
     }
 
@@ -211,31 +204,45 @@ export class Impl {
 
 
     //测试欢迎新人入群消息
-    // @mapper.onGroupIncrease(testGroupId)
-    // async handleGroupIncreaseTest(c: LagrangeContext<ApproveMessage>) {
-    //     console.log(`user: ${c.message.user_id} join the group`);
-    //     const newMemberId = c.message.user_id;
-    //     const groupId = c.message.group_id;
-        
-    //     // 调用 API 来获取用户的详细信息
-    //     const userInfo = await c.getStrangerInfo(newMemberId);
-        
-    //     // 安全地提取昵称
-    //     let newMemberName = 'new'; // 默认值
-
-    // // 'retcode' in userInfo 检查 userInfo 对象中是否存在 retcode 属性
-    // // 这行代码将 userInfo 的类型从 'Error | CommonResponse' 收窄到 'CommonResponse'
-    //     if (userInfo && 'retcode' in userInfo && userInfo.retcode === 0 && userInfo.data) {
-    //         // 当且仅当 API 成功时，才能安全地访问 data.nickname
-    //         newMemberName = userInfo.data.nickname;
-    //     } else {
-    //         // 如果 API 调用失败，我们可以在这里打印错误日志
-    //         console.error(`Failed to get user info for ID: ${newMemberId}`, userInfo);
-    //     }
-    //     await c.sendGroupMsg(groupId, `Welcome ${newMemberName} to UKFC`);
-        
-    // }
 
 
+    @mapper.onGroupIncrease(testGroupId)
+        async handleGroupIncreaseTest(c: LagrangeContext<ApproveMessage>) {
+        const newMemberId = c.message.user_id;
+        const groupId = c.message.group_id;
+
+        // 获取用户昵称
+        let newMemberName = 'new';
+        try {
+            const userInfo = await c.getStrangerInfo(newMemberId);
+            if (userInfo && 'retcode' in userInfo && userInfo.retcode === 0 && userInfo.data) {
+                newMemberName = userInfo.data.nickname;
+            }
+        } catch (e) {
+            console.error(`Failed to get user info for ID: ${newMemberId}`, e);
+        }
+
+        // 拿到当前群的缓存，没有就建一个
+        let groupCache = newMembers.get(groupId);
+        if (!groupCache) {
+            groupCache = { ids: [], names: [] };
+            newMembers.set(groupId, groupCache);
+        }
+
+        // ✅ 追加，而不是覆盖
+        groupCache.ids.push(newMemberId);
+        groupCache.names.push(newMemberName);
+
+        // 如果还没定时器，启动一个
+        if (!groupCache.timer) {
+            groupCache.timer = setTimeout(async () => {
+                const names = groupCache!.names.join(', ');
+                await c.sendGroupMsg(groupId, `欢迎 ${names} 加入 UKFC！🎉`);
+
+                // 清理缓存，下一波重新计时
+                newMembers.delete(groupId);
+            }, 60000); // 5秒合并一次
+        }
+    }
 
 }

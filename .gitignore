@@ -307,4 +307,5 @@ logs/
 mcpconfig.json
 ./Lagrange.OneBot
 *_mcpconfig.json
-./openmcp
+.openmcp
+.vscode

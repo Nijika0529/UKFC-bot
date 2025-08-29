@@ -1,9 +1,10 @@
 import { server } from 'lagrange.onebot';
 import './test';
 import './product'
-import { setupDailyWeatherJob, setsummaryPDFJob} from './impl';
+import { setupDailyWeatherJob, setsummaryPDFJob } from './impl';
 import * as dotenv from 'dotenv';
-import './ukfc'
+import './ukfc';
+import './new';
 
 dotenv.config();
 const My_ID = Number(process.env.My_ID);
