@@ -5,7 +5,13 @@ import { execFile } from 'child_process';
 import cron from 'node-cron';
 import {mapper, LagrangeContext, PrivateMessage, GroupMessage, plugins, AddFriendOrGroupMessage, ApproveMessage, Message} from 'lagrange.onebot';
 import { MessageRecord } from './types'; // 导入我们定义的类型
-import { getGroupSummaryPDF, getWeather } from './mcp';
+import { getGroupSummaryPDF, getWeather,checkGroupjoinrequest } from './mcp';
+import {splitMessage} from './utils'
+import * as dotenv from 'dotenv';
+
+
+dotenv.config();
+const new_GROUP_ID = Number(process.env.new_GROUP_ID);
 
 const BOT_QQ = Number(process.env.Docker_TEST);
 
@@ -114,7 +120,7 @@ export async function handleBotMention(c: LagrangeContext<GroupMessage>,messageD
     return isAtBot;
 }
 
-const ALLOWED_COMMANDS = new Set(['ls', 'cat', 'ping', 'whoami', 'date', 'where', 'which','ifconfig','id']);
+const ALLOWED_COMMANDS = new Set(['ls', 'cat', 'ping', 'whoami', 'date', 'where', 'which','ifconfig','id','ip']);
 
 export function executeSafeCommand(fullCommandString: string): Promise<string> {
     return new Promise((resolve) => {
@@ -208,7 +214,7 @@ export function setupDailyWeatherJob(c: LagrangeContext<Message>, GroupId: numbe
 }
 
 export function setsummaryPDFJob(c: LagrangeContext<Message>, GroupId: number) {
-    const cronTime = '0 00 23 * * *';
+    const cronTime = '0 05 23 * * *';
 
     cron.schedule(cronTime, async () => {
 
@@ -240,4 +246,84 @@ export function setsummaryPDFJob(c: LagrangeContext<Message>, GroupId: number) {
     }, {
         timezone: "Asia/Shanghai"
     });
+}
+
+//处理入群申请
+
+export class GroupJoinHandler{
+
+    @mapper.onAddFriendOrGroup()
+    async handleAddRequest(event: any) {
+        console.log("收到加群/加好友申请:", event.message);
+        const msg = event.message;
+        // 判断是不是群申请
+        if (msg.request_type === "group") {
+            // 取出必要字段
+            const flag = msg.flag;
+            const sub_type = msg.sub_type; // "add" 或 "invite"
+            const groupId = msg.group_id;
+            const userId = msg.user_id;
+            const comment = msg.comment ? msg.comment : null;
+
+            console.log("flag:", flag);
+            console.log("sub_type:", sub_type);
+            console.log("groupId:", groupId);
+            console.log("userId:", userId);
+
+            // 业务逻辑，比如根据群号判断是否同意
+            if (groupId === new_GROUP_ID || 1054047948) {
+                // ✅ 调用接口同意入群
+                // const result = await checkGroupjoinrequest(comment);
+                const result = validateMessage(comment);
+                if (result === true){
+                    await event.setGroupAddRequest(flag, sub_type, true);
+                    console.log(`已处理${userId}进群申请`);
+                }
+                else{
+                    console.log(`请手动处理${userId}进群申请`);
+                }
+                
+            } else {
+                // ❌ 拒绝
+                // await event.setGroupAddRequest(flag, sub_type, false, "不允许加入");
+                console.log("已拒绝进群申请");
+            }
+        }
+    }
+}
+const subjects = ["软件", "软件工程", "软工", "网安", "网络空间", "网络空间安全", "计科", "计算机", "计算机科学与技术", "大数据", "物联网"];
+
+function validateMessage(message: string): boolean {
+    const parts = splitMessage(message);
+    console.log(parts);
+
+    if (parts.length !== 3) return false ;
+
+    const [subject, className, name] = parts;
+
+    // 检查学科
+    if (!subjects.includes(subject)) return false;
+
+    // 检查班级（假设班级为数字或字母+数字组合）
+    if (!validateClass(className)) return false;
+
+    // 检查姓名（汉字）
+    if (!/^[\p{Script=Han}]+$/u.test(name)) return false;
+
+    return true;
+}
+function validateClass(className: string): boolean {
+    // 先匹配全数字
+    if (!/^\d+$/.test(className)) return false;
+
+    const num = parseInt(className, 10);
+
+    // 检查是否在允许的区间
+    const ranges = [
+        [2301, 2380],
+        [2401, 2480],
+        [2501, 2580]
+    ];
+
+    return ranges.some(([min, max]) => num >= min && num <= max);
 }
