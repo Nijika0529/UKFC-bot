@@ -9,7 +9,7 @@ import './new';
 dotenv.config();
 const My_ID = Number(process.env.My_ID);
 const test_GROUP_ID = Number(process.env.test_GROUP_ID);
-const Docker_TEST = Number(process.env.Docker_TEST);
+const Windows_TEST = Number(process.env.Windows_TEST);
 const fox_home_GROUP_ID = Number(process.env.fox_home_GROUP_ID);
 const main_GROUP_ID = Number(process.env.main_GROUP_ID);
 
@@ -34,5 +34,5 @@ server.run({
     host: '127.0.0.1',
     port: 8080,
     path: '/onebot/v11/ws',
-    qq: Docker_TEST
+    qq: Windows_TEST
 });

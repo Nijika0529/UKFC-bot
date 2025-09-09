@@ -13,7 +13,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 const new_GROUP_ID = Number(process.env.new_GROUP_ID);
 
-const BOT_QQ = Number(process.env.Docker_TEST);
+const BOT_QQ = Number(process.env.Windows_TEST);
 
 /**
  * 解析原始消息数据，转换成标准的消息记录对象

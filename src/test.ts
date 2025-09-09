@@ -8,7 +8,7 @@ const newMembers: Map<number, { ids: number[], names: string[], timer?: NodeJS.T
 
 dotenv.config();
 const testGroupId = Number(process.env.test_GROUP_ID);
-const Docker_TEST = Number(process.env.Docker_TEST);
+const Windows_TEST = Number(process.env.Windows_TEST);
 
 export class Impl {
 
@@ -29,13 +29,17 @@ export class Impl {
                     await saveRecordToFile(record, c.message.group_id);
                     await handlePossibleCommand(c);
                 }
-                if (Array.isArray(data.message) && data.message.some((m: any) => m.type === "at" && m.data?.qq == Docker_TEST)) {
-                    const question = c.message.message
-                    .filter(segment => segment.type === 'text')
-                    .map(segment => segment.data.text.trim())
-                    .join(' ');
-                    const reply = await ragMemory(question);
-                    c.sendGroupMsg(testGroupId,reply);
+                if (Array.isArray(data.message) && data.message.some((m: any) => m.type === "at" && m.data?.qq == Windows_TEST)) {
+                    // const question = c.message.message
+                    // .filter(segment => segment.type === 'text')
+                    // .map(segment => segment.data.text.trim())
+                    // .join(' ');
+                    // const reply = await ragMemory(question);
+                    // c.sendGroupMsg(testGroupId,reply);
+                    const newPdfPath = "C:\\Users\\28032\\Desktop\\测试.txt";
+                    // console.log("10000");
+                    const uploadResult = await c.uploadGroupFile(testGroupId, newPdfPath, "测试.txt");
+                    console.log(uploadResult);
                 }
             }
         } catch (error) {

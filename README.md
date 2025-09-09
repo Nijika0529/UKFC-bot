@@ -6,11 +6,14 @@
 ### 部署本项目
 ```
 # npm
-npm install lagrange.onebot
+npm i
 
 # yarn
-yarn add lagrange.onebot
+yarn
 ```
+项目内自行创建 .env 存放账号信息
+编译启动(先启动 Lagrange)
+
 ```
 npx tsc
 node ./dist/main.js
